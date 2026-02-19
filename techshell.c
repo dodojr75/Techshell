@@ -7,6 +7,9 @@
 #include <errno.h>
 #include <unistd.h>
 #include <stdbool.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <fcntl.h>
 
 bool DEBUG = true;
 #define MAX_ARGS 100
@@ -153,11 +156,15 @@ void execution(ParsedInput command){
     		if(command.redirectOutFile != NULL){
         		printf("Redirect Out File: %s\n", command.redirectOutFile);
     		}
-	} else {
-		// checks if it is an available command
-		while (true){
-			if (strcmp(command.command, "cd")){
-				// cd
+	} 
+	else {
+		//Check if no command entered
+		if (command.command == NULL) {
+		    return;
+		}
+		
+		    if (strcmp(command.command, "cd") == 0){
+			    // cd
 				// checks if there are enough arguments
 				// wants 2 arguments (cd and a path)
 				if (command.argCount < 2){
@@ -166,25 +173,77 @@ void execution(ParsedInput command){
 					getcwd(directory, sizeof(directory));
 
 					break;
-				} else if (command.argCount > 2){
+				} 
+				else if (command.argCount > 2){
 					printf("Too many arguments were provided");
 					break;
-				} else {
-					char moveTo[] = command.args[1];
+				} 
+				else {
+					char *moveTo = command.args[1];
 					if (moveTo == ".."){
 						// move up one level
 		
-					} else {
+					} 
+					else {
 						// move to file if available
 							// if file available, move to it
 							// else, spit out an error
 					}
 				}
-			} else if (strcmp(command.command, "exit")){
+			} 
 			
-			} else {
-				execvp(command.command, command.args);
+			else if (strcmp(command.command, "exit") == 0){
+			    exit(0);
+			} 
+			else {
+				pid_t pid = fork();
+				//making fork and checking if it failed or not
+				if (pid < 0){
+				    perror("Fork failed");
+				    return;
+				}
+				
+				// Child
+				if (pid == 0){
+				
+				    // output redirect >
+				    
+				    if (command.hasRedirectOut){
+				        //opens the file and returns a file descriptor 
+				        int fd = open(command.redirectOutFile, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+				        
+				        if (fd < 0){
+				            perror("Open Failed");
+				            exit(1);
+				        
+				        }
+				        //Makes output go from terminal to the file instead 
+				        dup2(fd, STDOUT_FILENO);
+				        close(fd);
+				    }
+				    
+				    // Input redirect <
+				    if (command.hasRedirectIn){
+				    
+				        int fd = open(command.redirectInFile, O_RDONLY);
+				        
+				        if (fd < 0){
+				            perror("Failed to open");
+				            exit(1);
+				        }
+				        
+				        dup2(fd, STDIN_FILENO);
+				        close(fd);
+				    }
+				    execvp(command.command, command.args);
+				    
+				    perror("Command failed");
+				    exit(1);
+				}
+				else{
+				    wait(NULL);
+				}
 			}
-		}
+		
 		
 }
