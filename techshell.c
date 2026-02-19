@@ -32,7 +32,7 @@ char[] input();
 //
 // Be sure to consider/test for situations when a backslash is used to escape the space char
 // and when quotes are used to group together various tokens.
-void checkInput(char[] val)();
+void checkInput(char[] val);
 
 // A function that executes the command.
 // This function might thake in a struct that represents the shell command.
