@@ -14,7 +14,7 @@ void start();
 // A function that takes input from the user.
 // It may return return the input to the calling statement or
 // stor it at some memory location using a pointer.
-char[] input();
+char input();
 
 // A function that parses through the user input.
 // Consider having this function return a struct that stores vital
@@ -71,14 +71,24 @@ int main(){
 		execution(command);
 	}
 }
-
+// the display line
 void start(){
-
+	// creates a variable for the path
+	char homeLine[256];
+	getcwd(homeLine, sizeof(homeLine));
+	// prints the stuff before the $ and the $ (~$)
+	printf("%s$ ", homeLine);
 }
 
-char[] input(){
-
+char input(){
+	// creates a character to store the command
+	char newCommand;
+	// reads the line
+	scanf("%s", &newCommand);
+	// stores the line
+	return newCommand;
 }
+
 
 void checkInput(char[] val){
 
