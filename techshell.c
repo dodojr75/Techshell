@@ -7,6 +7,20 @@
 #include <errno.h>
 #include <unistd.h>
 
+
+#define MAX_ARGS 100
+//Creating Struct
+typedef struct {
+    char *command;       //ls
+    char *args[MAX_ARGS];//ls -l /home
+    int argCount;
+    
+    int hasRedirectOut;  // >
+    int hasRedirectIn;   // <
+    int hasPipe;         // |
+    
+    char *redirectFile;  // filename after >
+} ParsedInput;
 // A function that causes the prompt to
 // display in the terminal
 void start();
@@ -32,8 +46,7 @@ char* input();
 //
 // Be sure to consider/test for situations when a backslash is used to escape the space char
 // and when quotes are used to group together various tokens.
-void checkInput(char[] val);
-
+ParsedInput checkInput(char *val);
 // A function that executes the command.
 // This function might thake in a struct that represents the shell command.
 //
@@ -51,11 +64,11 @@ void checkInput(char[] val);
 // 	Be sure to handle standard output redirect and standard input redirects here
 // 		That is, there symbols: > and <.
 // 		Pipe isn't required but could be a nice addition.
-void execution(struct val);
+void execution();
 
 int main(){
 	char* newInput;
-	struct ShellCommand command;
+	ParsedInput command;
 
 	for (;;){
 		// display the prompt
@@ -68,10 +81,10 @@ int main(){
 		command = checkInput(newInput);
 
 		// execute the command
-		execution(command);
+		//execution(command);
 	}
 }
-// the display line
+
 void start(){
 	// creates a variable for the path
 	char homeLine[256];
@@ -88,12 +101,58 @@ char* input(){
 	// stores the line
 	return newCommand;
 }
+ParsedInput checkInput(char *val){
 
-void checkInput(char[] val){
+    // create a variable named result to store everything
+    ParsedInput result;
+    
+    // Initialize everything
+    result.argCount = 0;
+    result.hasRedirectOut = 0;
+    result.hasRedirectIn = 0;
+    result.hasPipe = 0;
+    result.redirectFile = NULL;
+    
+    //Splits the input "val" using spaces as the seperator
+    // if typed ls -l > file.txt should split as "ls" "-l" ">" "file.txt"
+    char *token = strtok(val, " ");
 
+    while (token != NULL){
+    
+        // Case 1 output redirect ">" 
+        if (strcmp(token, ">") == 0){
+            result.hasRedirectOut = 1;
+            //since redierct grabs next word which should be filename since redirecting and sets it as a token
+            token = strtok(NULL, " ");
+            //redirects to the token (file)
+            result.redirectFile = token;
+        }
+        // Case 2 input redirect "<"
+        else if (strcmp(token, "<") == 0){
+        // Marking that it exists
+            result.hasRedirectIn = 1;
+        }
+        // Case 3 Pipe "|"
+        else if (strcmp(token, "|") == 0){
+        // Showing it exists again
+            result.hasPipe = 1;
+        }
+        //Case 4 Normal Args (a command or normal arg like ls -l)
+        else{
+        //stores the word in the args array
+            result.args[result.argCount] = token;
+            result.argCount++;
+        }
+        //next token
+        token = strtok(NULL, " ");
+    }
+    //shows execvp or whichever function used when to stop
+    result.args[result.argCount] = NULL;
+    //sets first arg as command
+    result.command = result.args[0];
+    
+    return result;
 }
 
-void execution(struct val){
 
-}
-
+void execution(){}
