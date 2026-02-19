@@ -11,7 +11,7 @@
 #include <sys/wait.h>
 #include <fcntl.h>
 
-bool DEBUG = true;
+bool DEBUG = false;
 #define MAX_ARGS 100
 //Creating Struct
 typedef struct {
@@ -70,7 +70,10 @@ char* input(){
 	// creates a character to store the command
 	static char newCommand[MAX_ARGS];
 	// reads the line
-	fgets(newCommand, sizeof(newCommand), stdin);
+	if (fgets(newCommand, sizeof(newCommand), stdin) == NULL ) {
+	    return NULL;
+	}
+	newCommand[strcspn(newCommand, "\n")] == '\0';
 	// stores the line
 	return newCommand;
 }
@@ -115,13 +118,14 @@ ParsedInput checkInput(char *val){
         else if (strcmp(token, "|") == 0){
         // Showing it exists again
             result.hasPipe = 1;
+            result.args[result.argCount++] = token;
 
         }
         //Case 4 Normal Args (a command or normal arg like ls -l)
         else{
         //stores the word in the args array
             result.args[result.argCount] = token;
-            result.argCount++;
+       
         }
         //next token
         token = strtok(NULL, " ");
@@ -160,9 +164,10 @@ void execution(ParsedInput command){
 	else {
 		//Check if no command entered
 		if (command.command == NULL) {
-			return;
+		    return;
 		}
-		if (strcmp(command.command, "cd") == 0){
+		
+		    if (strcmp(command.command, "cd") == 0){
 			// cd
 			// checks if there are enough arguments
 			// wants 2 arguments (cd and a path)
@@ -171,13 +176,13 @@ void execution(ParsedInput command){
 				char directory[MAX_ARGS];
 				getcwd(directory, sizeof(directory));
 				// tokenizes each section between the /
-				char *token = strtok(home, "/");
+				char *token = strtok(directory, "/");
 				int i = 0;
 				char *newDirectory[MAX_ARGS];
 				// places first 2 tokens in the new array
 				while (i < 2){
 					newDirectory[i] = token;
-					token = strtok(Null, "/");
+					token = strtok(NULL, "/");
 					i += 1;
 				}
 				int j = 0;
@@ -256,57 +261,117 @@ void execution(ParsedInput command){
 				}
 			}
 		} 
-		
-		else if (strcmp(command.command, "exit") == 0){
-		    exit(0);
-		} 
-		else {
-			pid_t pid = fork();
-			//making fork and checking if it failed or not
-			if (pid < 0){
-			    perror("Fork failed");
-			    return;
-			}
 			
-			// Child
-			if (pid == 0){
+			else if (strcmp(command.command, "exit") == 0){
+			    exit(0);
+			} 
+			else {
 			
-			    // output redirect >
-			    
-			    if (command.hasRedirectOut){
-			        //opens the file and returns a file descriptor 
-			        int fd = open(command.redirectOutFile, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-			        
-			        if (fd < 0){
-			            perror("Open Failed");
-			            exit(1);
-			        
-			        }
-			        //Makes output go from terminal to the file instead 
-			        dup2(fd, STDOUT_FILENO);
-			        close(fd);
-			    }
-			    
-			    // Input redirect <
-			    if (command.hasRedirectIn){
-			    
-			        int fd = open(command.redirectInFile, O_RDONLY);
-			        
-			        if (fd < 0){
-			            perror("Failed to open");
-			            exit(1);
-			        }
-			        
-			        dup2(fd, STDIN_FILENO);
-			        close(fd);
-			    }
-			    execvp(command.command, command.args);
-			    
-			    perror("Command failed");
-			    exit(1);
+			    if (command.hasPipe){
+                    int pipefd[2];
+                    pipe(pipefd);
+                    
+                    // First fork (left side of the pipe)
+                    pid_t pid1 = fork();
+                    
+                    if(pid1 == 0){
+                        //redirects stdout to pipe
+                        dup2(pipefd[1], STDOUT_FILENO);
+                        close(pipefd[0]);
+                        close(pipefd[1]);
+                        
+                        // find the pipe in all the args
+                        int i = 0;
+                        while (strcmp(command.args[i], "|") != 0){
+                            i++;
+                        }
+                        
+                        //when pipe is found change to NULL
+                        command.args[i] = NULL;
+                        
+                        //execute left command
+                        execvp(command.args[0], command.args); 
+                        
+                        //in case exec fails
+                        perror("Left command failed");
+                        exit(1);
+                    }
+                    
+                    //Second fork (right side of pipe)
+                    pid_t pid2 = fork();
+                    
+                    if (pid2 == 0){
+                    
+                        dup2(pipefd[0], STDIN_FILENO);
+                        close(pipefd[1]);
+                        close(pipefd[0]);
+                        
+                        int i = 0;
+                        while (strcmp(command.args[i], "|") != 0){
+                            i++;
+                        }
+                        //execute right side command
+                        execvp(command.args[i+1], &command.args[i+1]);
+                        perror("Right command failed");
+                        exit(1);
+                    }    
+                    //Parent process's 
+                    //Closes both pipes but doenst use them'
+                    close(pipefd[0]);
+                    close(pipefd[1]);
+                    //waits for children to finish
+                    wait(NULL);
+                    wait(NULL);
+                    
+                    return;
+                }
+				pid_t pid = fork();
+				//making fork and checking if it failed or not
+				if (pid < 0){
+				    perror("Fork failed");
+				    return;
+				}
+				
+				// Child
+				if (pid == 0){
+				
+				    // output redirect >
+				    
+				    if (command.hasRedirectOut){
+				        //opens the file and returns a file descriptor 
+				        int fd = open(command.redirectOutFile, O_WRONLY | O_CREAT | O_TRUNC,0644);
+				        
+				        if (fd < 0){
+				            perror("Open Failed");
+				            exit(1);
+				        
+				        }
+				        //Makes output go from terminal to the file instead 
+				        dup2(fd, STDOUT_FILENO);
+				        close(fd);
+				    }
+				    
+				    // Input redirect <
+				    if (command.hasRedirectIn){
+				    
+				        int fd = open(command.redirectInFile, O_RDONLY);
+				        
+				        if (fd < 0){
+				            perror("Failed to open");
+				            exit(1);
+				        }
+				        
+				        dup2(fd, STDIN_FILENO);
+				        close(fd);
+				    }
+				    execvp(command.command, command.args);
+				    
+				    perror("Command failed");
+				    exit(1);
+				}
+				else{
+				    wait(NULL);
+				}
 			}
-			else{
-			    wait(NULL);
-			}
-		}		
-}
+		}
+	}
