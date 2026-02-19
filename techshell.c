@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <stdbool.h>
 
+bool DEBUG = true;
 #define MAX_ARGS 100
 //Creating Struct
 typedef struct {
@@ -36,8 +37,6 @@ ParsedInput checkInput(char *val);
 void execution(ParsedInput command);
 
 int main(){
-	// for troubleshooting
-	bool DEBUG = true;
 	char* newInput;
 	ParsedInput command;
 
@@ -155,24 +154,17 @@ void execution(ParsedInput command){
         		printf("Redirect Out File: %s\n", command.redirectOutFile);
     		}
 	} else {
-		// stores all possible commands
-		char *commands[MAX_ARGS];
-		commands[0] = "cd";
-		commands[1] = "pwd";
-		commands[2] = "ls";
-		commands[3] = "chmod";
-		commands[4] = "ps";
-		commands[5] = "whereis";
-		commands[6] = "cat";
 		// checks if it is an available command
 		while (true){
-			if (command.command == commands[0]){
+			if (strcmp(command.command, "cd")){
 				// cd
 				// checks if there are enough arguments
 				// wants 2 arguments (cd and a path)
 				if (command.argCount < 2){
 					// goes to the home directory
-					char 
+					char directory[MAX_ARGS];
+					getcwd(directory, sizeof(directory));
+
 					break;
 				} else if (command.argCount > 2){
 					printf("Too many arguments were provided");
@@ -188,28 +180,10 @@ void execution(ParsedInput command){
 							// else, spit out an error
 					}
 				}
-			} else if (command.command == commands[1]){
-				// pwd
-				char directory[MAX_ARGS];
-				getcwd(directory, sizeof(directory));
-				printf("%s\n", directory);
-			} else if (command.command == commands[2]){
-				// ls
-	
-			} else if (command.command == commands[3]){
-				// chmod
-	
-			} else if (command.command == commands[4]){
-				// ps
-
-			} else if (command.command == commands[5]){
-				// whereis
-	
-			} else if (command.command == commands[6]){
-				// cat
-	
+			} else if (strcmp(command.command, "exit")){
+			
 			} else {
-				printf("Error: %s is not a command", command.command);
+				execvp(command.command, command.args);
 			}
 		}
 		
