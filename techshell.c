@@ -19,7 +19,8 @@ typedef struct {
     int hasRedirectIn;   // <
     int hasPipe;         // |
     
-    char *redirectFile;  // filename after >
+    char *redirectInFile;  // filename after >
+    char *redirectOutFile; // filename after <
 } ParsedInput;
 // A function that causes the prompt to
 // display in the terminal
@@ -111,7 +112,8 @@ ParsedInput checkInput(char *val){
     result.hasRedirectOut = 0;
     result.hasRedirectIn = 0;
     result.hasPipe = 0;
-    result.redirectFile = NULL;
+    result.redirectInFile = NULL;
+    result.redirectOutFile = NULL;
     
     //Splits the input "val" using spaces as the seperator
     // if typed ls -l > file.txt should split as "ls" "-l" ">" "file.txt"
@@ -122,25 +124,26 @@ ParsedInput checkInput(char *val){
         // Case 1 output redirect ">" 
         if (strcmp(token, ">") == 0){
             result.hasRedirectOut = 1;
-            result.argCount++;
+
             //since redierct grabs next word which should be filename since redirecting and sets it as a token
             token = strtok(NULL, " ");
-            result.argCount++;
+
             //redirects to the token (file)
-            result.redirectFile = token;
+            result.redirectOutFile = token;
             
         }
         // Case 2 input redirect "<"
         else if (strcmp(token, "<") == 0){
         // Marking that it exists
             result.hasRedirectIn = 1;
-            result.argCount++;
+            token = strtok(NULL, " ");
+            result.redirectInFile = token; 
         }
         // Case 3 Pipe "|"
         else if (strcmp(token, "|") == 0){
         // Showing it exists again
             result.hasPipe = 1;
-            result.argCount++;
+
         }
         //Case 4 Normal Args (a command or normal arg like ls -l)
         else{
@@ -162,10 +165,23 @@ ParsedInput checkInput(char *val){
 
 void execution(ParsedInput command){
 
-    printf("%s\n", command.command);
-    printf("%s\n", command.args[1]);
-    printf("%d\n", command.argCount);
-    printf("%d\n", command.hasRedirectOut);
-    printf("%d\n", command.hasRedirectIn);
-    printf("%d\n", command.hasPipe);
+    if(command.command != NULL){
+        printf("Command: %s\n", command.command);
+}
+    printf("Arguments:\n");
+    for(int i = 0; i < command.argCount; i++){
+        printf("  %s\n", command.args[i]);
+    }
+
+    printf("Arg Count: %d\n", command.argCount);
+    printf("Redirect Out: %d\n", command.hasRedirectOut);
+    printf("Redirect In: %d\n", command.hasRedirectIn);
+    printf("Pipe: %d\n", command.hasPipe);
+
+    if(command.redirectInFile != NULL){
+        printf("Redirect In File: %s\n", command.redirectInFile);
+        }
+    if(command.redirectOutFile != NULL){
+        printf("Redirect Out File: %s\n", command.redirectOutFile);
+    }
 }
