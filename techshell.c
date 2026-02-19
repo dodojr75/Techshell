@@ -6,7 +6,7 @@
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>
-
+#include <stdbool.h>
 
 #define MAX_ARGS 100
 //Creating Struct
@@ -22,52 +22,22 @@ typedef struct {
     char *redirectInFile;  // filename after >
     char *redirectOutFile; // filename after <
 } ParsedInput;
-// A function that causes the prompt to
-// display in the terminal
+
+// function for the display
 void start();
 
-// A function that takes input from the user.
-// It may return return the input to the calling statement or
-// stor it at some memory location using a pointer.
+// function to take the input/arguments
 char* input();
 
-// A function that parses through the user input.
-// Consider having this function return a struct that stores vital
-// information about the parsed instruction such as:
-// 	The command itself
-// 	The arguments that come after the command
-// 		Hint: When formating your data,
-// 		look into execvp and how it takes in args.
-// 	Information about if a redirect was detected such as >, <, or |
-// 	Information about whether or not a new file
-//          needs to be created and what that filename may be.
-//
-// Some halpful functions when doing this come from string.h and stdlib.h, such as
-// strtok, strcmp, strcpy, calloc, malloc, realloc, free, and more
-//
-// Be sure to consider/test for situations when a backslash is used to escape the space char
-// and when quotes are used to group together various tokens.
+// function to check what was taken in the input line
 ParsedInput checkInput(char *val);
-// A function that executes the command.
-// This function might thake in a struct that represents the shell command.
-//
-// Be sure to consider each of the following:
-// 	The execvp() function.
-// 		This can execute commands that already exist, that is,
-// 		you don't need to recreate the functionality of
-// 		the commands on your computer, just the shell.
-// 		Keep in mind that execvp takes over the current process.
-// 	The fork() function.
-// 		This can create a process for execvp to take over.
-// 	cd is not a command like ls and mkdir
-// 		cd is a toold provided by the shell,
-// 		so you WILL need to recreate the functionality of cd.
-// 	Be sure to handle standard output redirect and standard input redirects here
-// 		That is, there symbols: > and <.
-// 		Pipe isn't required but could be a nice addition.
+
+// function to execute what the check input finds
 void execution(ParsedInput command);
 
 int main(){
+	// for troubleshooting
+	bool DEBUG = true;
 	char* newInput;
 	ParsedInput command;
 
@@ -96,7 +66,7 @@ void start(){
 
 char* input(){
 	// creates a character to store the command
-	static char newCommand[264];
+	static char newCommand[MAX_ARGS];
 	// reads the line
 	fgets(newCommand, sizeof(newCommand), stdin);
 	// stores the line
@@ -164,24 +134,83 @@ ParsedInput checkInput(char *val){
 
 
 void execution(ParsedInput command){
+	if (DEBUG == true){
+		if(command.command != NULL){
+        		printf("Command: %s\n", command.command);
+		}
+    		printf("Arguments:\n");
+    		for(int i = 0; i < command.argCount; i++){
+        		printf("  %s\n", command.args[i]);
+    		}
 
-    if(command.command != NULL){
-        printf("Command: %s\n", command.command);
-}
-    printf("Arguments:\n");
-    for(int i = 0; i < command.argCount; i++){
-        printf("  %s\n", command.args[i]);
-    }
+    		printf("Arg Count: %d\n", command.argCount);
+    		printf("Redirect Out: %d\n", command.hasRedirectOut);
+   		printf("Redirect In: %d\n", command.hasRedirectIn);
+    		printf("Pipe: %d\n", command.hasPipe);
 
-    printf("Arg Count: %d\n", command.argCount);
-    printf("Redirect Out: %d\n", command.hasRedirectOut);
-    printf("Redirect In: %d\n", command.hasRedirectIn);
-    printf("Pipe: %d\n", command.hasPipe);
+    		if(command.redirectInFile != NULL){
+        		printf("Redirect In File: %s\n", command.redirectInFile);
+        		}
+    		if(command.redirectOutFile != NULL){
+        		printf("Redirect Out File: %s\n", command.redirectOutFile);
+    		}
+	} else {
+		// stores all possible commands
+		char *commands[MAX_ARGS];
+		commands[0] = "cd";
+		commands[1] = "pwd";
+		commands[2] = "ls";
+		commands[3] = "chmod";
+		commands[4] = "ps";
+		commands[5] = "whereis";
+		commands[6] = "cat";
+		// checks if it is an available command
+		while (true){
+			if (command.command == commands[0]){
+				// cd
+				// checks if there are enough arguments
+				// wants 2 arguments (cd and a path)
+				if (command.argCount < 2){
+					// goes to the home directory
+					char 
+					break;
+				} else if (command.argCount > 2){
+					printf("Too many arguments were provided");
+					break;
+				} else {
+					char moveTo[] = command.args[1];
+					if (moveTo == ".."){
+						// move up one level
+		
+					} else {
+						// move to file if available
+							// if file available, move to it
+							// else, spit out an error
+					}
+				}
+			} else if (command.command == commands[1]){
+				// pwd
+				char directory[MAX_ARGS];
+				getcwd(directory, sizeof(directory));
+				printf("%s\n", directory);
+			} else if (command.command == commands[2]){
+				// ls
+	
+			} else if (command.command == commands[3]){
+				// chmod
+	
+			} else if (command.command == commands[4]){
+				// ps
 
-    if(command.redirectInFile != NULL){
-        printf("Redirect In File: %s\n", command.redirectInFile);
-        }
-    if(command.redirectOutFile != NULL){
-        printf("Redirect Out File: %s\n", command.redirectOutFile);
-    }
+			} else if (command.command == commands[5]){
+				// whereis
+	
+			} else if (command.command == commands[6]){
+				// cat
+	
+			} else {
+				printf("Error: %s is not a command", command.command);
+			}
+		}
+		
 }
