@@ -160,90 +160,153 @@ void execution(ParsedInput command){
 	else {
 		//Check if no command entered
 		if (command.command == NULL) {
-		    return;
+			return;
 		}
-		
-		    if (strcmp(command.command, "cd") == 0){
-			    // cd
-				// checks if there are enough arguments
-				// wants 2 arguments (cd and a path)
-				if (command.argCount < 2){
-					// goes to the home directory
-					char directory[MAX_ARGS];
-					getcwd(directory, sizeof(directory));
-
-					break;
-				} 
-				else if (command.argCount > 2){
-					printf("Too many arguments were provided");
-					break;
-				} 
-				else {
-					char *moveTo = command.args[1];
-					if (moveTo == ".."){
-						// move up one level
-		
-					} 
-					else {
-						// move to file if available
-							// if file available, move to it
-							// else, spit out an error
-					}
+		if (strcmp(command.command, "cd") == 0){
+			// cd
+			// checks if there are enough arguments
+			// wants 2 arguments (cd and a path)
+			if (command.argCount < 2){
+				// creates current directory
+				char directory[MAX_ARGS];
+				getcwd(directory, sizeof(directory));
+				// tokenizes each section between the /
+				char *token = strtok(home, "/");
+				int i = 0;
+				char *newDirectory[MAX_ARGS];
+				// places first 2 tokens in the new array
+				while (i < 2){
+					newDirectory[i] = token;
+					token = strtok(Null, "/");
+					i += 1;
 				}
+				int j = 0;
+				char newLine[MAX_ARGS];
+				// combines the two strings with / for new directory
+				while (j < i){
+					strcat(newLine, "/");
+					strcat(newLine, newDirectory[j]);
+					j += 1;
+				}
+				// changes directory to new directory
+				chdir(newLine);
 			} 
-			
-			else if (strcmp(command.command, "exit") == 0){
-			    exit(0);
+			else if (command.argCount > 2){
+				printf("Too many arguments were provided");
 			} 
 			else {
-				pid_t pid = fork();
-				//making fork and checking if it failed or not
-				if (pid < 0){
-				    perror("Fork failed");
-				    return;
-				}
-				
-				// Child
-				if (pid == 0){
-				
-				    // output redirect >
-				    
-				    if (command.hasRedirectOut){
-				        //opens the file and returns a file descriptor 
-				        int fd = open(command.redirectOutFile, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-				        
-				        if (fd < 0){
-				            perror("Open Failed");
-				            exit(1);
-				        
-				        }
-				        //Makes output go from terminal to the file instead 
-				        dup2(fd, STDOUT_FILENO);
-				        close(fd);
-				    }
-				    
-				    // Input redirect <
-				    if (command.hasRedirectIn){
-				    
-				        int fd = open(command.redirectInFile, O_RDONLY);
-				        
-				        if (fd < 0){
-				            perror("Failed to open");
-				            exit(1);
-				        }
-				        
-				        dup2(fd, STDIN_FILENO);
-				        close(fd);
-				    }
-				    execvp(command.command, command.args);
-				    
-				    perror("Command failed");
-				    exit(1);
-				}
-				else{
-				    wait(NULL);
+				char *moveTo = command.args[1];
+				if (moveTo == ".."){
+					// move up one level
+					char oldDirectory[MAX_ARGS];
+					getcwd(oldDirectory, sizeof(oldDirectory));
+					char *token = strtok(oldDirectory, "/");
+					int i = 0;
+					char *oldString[MAX_ARGS];
+					while (token != NULL){
+						oldString[i] = token;
+						token = strtok(NULL, "/");
+						i += 1;
+					}
+					i -= 1;
+					char *newDirectory[MAX_ARGS];
+					int j = 0;
+					while (j < i){
+						newDirectory[j] = oldString[j];
+						j += 1;
+					}
+					char newLine[MAX_ARGS];
+					int k = 0;
+					while (k < j){
+						strcat(newLine, "/");
+						strcat(newLine, newDirectory[k]);
+						k += 1;
+					}
+					chdir(newLine);
+
+				} 
+				else {
+					char current[MAX_ARGS];
+					getcwd(current, sizeof(current));
+					char *token = strtok(current, "/");
+					int i = 0;
+					char *oldDirectory[MAX_ARGS];
+					while (token != NULL){
+						oldDirectory[i] = token;
+						token = strtok(NULL, "/");
+						i += 1;
+					}
+					i -= 1;
+					char *newDirectory[MAX_ARGS];
+					int j = 0;
+					while (j < i){
+						newDirectory[j] = oldDirectory[j];
+						j += 1;
+					}
+					char newLine[MAX_ARGS];
+					int k = 0;
+					while (k < j){
+						strcat(newLine, "/");
+						strcat(newLine, newDirectory[k]);
+						k += 1;
+					}
+					strcat(newLine, "/");
+					strcat(newLine, command.args[1]);
+					chdir(newLine);
 				}
 			}
+		} 
 		
-		
+		else if (strcmp(command.command, "exit") == 0){
+		    exit(0);
+		} 
+		else {
+			pid_t pid = fork();
+			//making fork and checking if it failed or not
+			if (pid < 0){
+			    perror("Fork failed");
+			    return;
+			}
+			
+			// Child
+			if (pid == 0){
+			
+			    // output redirect >
+			    
+			    if (command.hasRedirectOut){
+			        //opens the file and returns a file descriptor 
+			        int fd = open(command.redirectOutFile, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+			        
+			        if (fd < 0){
+			            perror("Open Failed");
+			            exit(1);
+			        
+			        }
+			        //Makes output go from terminal to the file instead 
+			        dup2(fd, STDOUT_FILENO);
+			        close(fd);
+			    }
+			    
+			    // Input redirect <
+			    if (command.hasRedirectIn){
+			    
+			        int fd = open(command.redirectInFile, O_RDONLY);
+			        
+			        if (fd < 0){
+			            perror("Failed to open");
+			            exit(1);
+			        }
+			        
+			        dup2(fd, STDIN_FILENO);
+			        close(fd);
+			    }
+			    execvp(command.command, command.args);
+			    
+			    perror("Command failed");
+			    exit(1);
+			}
+			else{
+			    wait(NULL);
+			}
+		}		
 }
