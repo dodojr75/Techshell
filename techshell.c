@@ -64,7 +64,7 @@ ParsedInput checkInput(char *val);
 // 	Be sure to handle standard output redirect and standard input redirects here
 // 		That is, there symbols: > and <.
 // 		Pipe isn't required but could be a nice addition.
-void execution();
+void execution(ParsedInput command);
 
 int main(){
 	char* newInput;
@@ -81,7 +81,7 @@ int main(){
 		command = checkInput(newInput);
 
 		// execute the command
-		//execution(command);
+		execution(command);
 	}
 }
 
@@ -122,20 +122,25 @@ ParsedInput checkInput(char *val){
         // Case 1 output redirect ">" 
         if (strcmp(token, ">") == 0){
             result.hasRedirectOut = 1;
+            result.argCount++;
             //since redierct grabs next word which should be filename since redirecting and sets it as a token
             token = strtok(NULL, " ");
+            result.argCount++;
             //redirects to the token (file)
             result.redirectFile = token;
+            
         }
         // Case 2 input redirect "<"
         else if (strcmp(token, "<") == 0){
         // Marking that it exists
             result.hasRedirectIn = 1;
+            result.argCount++;
         }
         // Case 3 Pipe "|"
         else if (strcmp(token, "|") == 0){
         // Showing it exists again
             result.hasPipe = 1;
+            result.argCount++;
         }
         //Case 4 Normal Args (a command or normal arg like ls -l)
         else{
@@ -155,4 +160,12 @@ ParsedInput checkInput(char *val){
 }
 
 
-void execution(){}
+void execution(ParsedInput command){
+
+    printf("%s\n", command.command);
+    printf("%s\n", command.args[1]);
+    printf("%d\n", command.argCount);
+    printf("%d\n", command.hasRedirectOut);
+    printf("%d\n", command.hasRedirectIn);
+    printf("%d\n", command.hasPipe);
+}
