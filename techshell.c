@@ -1,37 +1,52 @@
 // Names : Caden F. + Jayden N.
+// Description: Program that acts as a shell. It can move up and down levels, check file information, and give and take away permissions
 
 #include <stdio.h> 
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <stdbool.h>
+#include <stdbool.h>    // helps with debuging the execution function
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <fcntl.h>
 
+// set true if you want to debug the execution function
 bool DEBUG = false;
+// permanent int of 100
 #define MAX_ARGS 100
 
+// struct used in place of the struct ShellCommand
 typedef struct {
+    // tracks the first argument, the command
     char *command;
+    // tracks all of the arguments
     char *args[MAX_ARGS];
+    // keeps count of the number of arguments
     int argCount;
 
+    // tracks number of >
     int hasRedirectOut;
+    // tracks number of <
     int hasRedirectIn;
+    // tracks number of |
     int hasPipe;
 
+    // the argument to the left of <
     char *redirectInFile;
+    // the argument to the right of >
     char *redirectOutFile;
 } ParsedInput;
 
+// prototyping
 void start();
 char* input();
 ParsedInput checkInput(char *val);
 void execution(ParsedInput command);
 
 int main(){
+    // creates a pointer to a new input
     char* newInput;
+    // creates the command that will be executed
     ParsedInput command;
 
     while (1){
